@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three Dee Lab • Pricing Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/dayjs@1.11.10/dayjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        
+        :root {
+            --primary: #0ea5e9;
+        }
+        
+        body {
+            font-family: 'Inter', system_ui, sans-serif;
+        }
+        
+        .font-display {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            font-weight: 600;
+        }
+
+        .section-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cost-input {
+            transition: all 0.1s ease;
+        }
+
+        .cost-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+
+        .currency {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .quote-header {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c8 100%);
+        }
+
+        .metric-value {
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "ss02";
+        }
+
+        .nav-active {
+            background-color: #0ea5e9;
+            color: white;
+            box-shadow: 0 10px 15px -3px rgb(14 165 233 / 0.2);
+        }
+
+        .material-row {
+            transition: background-color 0.1s ease;
+        }
+
+        .material-row:hover {
+            background-color: #f8fafc;
+        }
+
+        .total-display {
+            font-size: 2.75rem;
+            line-height: 1;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .print-only {
+            display: none;
+        }
+
+        @media print {
+            @page { margin: 0.5cm; size: portrait; }
+            
+            html, body {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                background: white !important;
+            }
+            
+            body, .max-w-screen-xl { margin: 0 !important; padding: 0 !important; max-width: 100% !important; }
+            
+            .no-print, button, header, .sticky, #btn-internal, #btn-client, .fa-save, .fa-history, .fa-print, .fa-file-pdf { display: none !important; }
+            .print-only { display: block !important; }
+            
+            body[data-view="internal"] { zoom: 0.85; }
+            
+            body[data-view="internal"] .section-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                break-inside: avoid;
+                margin-bottom: 1.5rem !important;
+                padding: 1.5rem !important;
+            }
+
+            body[data-view="internal"] .xl\:grid-cols-12 { display: flex !important; flex-direction: column !important; gap: 1.5rem !important; }
+            body[data-view="internal"] .xl\:col-span-5, body[data-view="internal"] .xl\:col-span-7 { width: 100% !important; }
+            
+            body[data-view="internal"] .xl\:grid-cols-6, body[data-view="internal"] .xl\:grid-cols-4 { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem !important; }
+            body[data-view="internal"] .md\:grid-cols-3 { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 1rem !important; }
+            body[data-view="internal"] .grid-cols-2 { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem !important; }
+
+            body[data-view="internal"] input, 
+            body[data-view="internal"] select, 
+            body[data-view="internal"] textarea {
+                background: #f8fafc !important;
+                border: 1px solid #cbd5e1 !important;
+                color: #0f172a !important;
+                box-shadow: none !important;
+                -webkit-appearance: auto !important;
+                appearance: auto !important;
+            }
+            
+            body[data-view="internal"] .modern-input {
+                padding: 0.5rem 0.75rem !important;
+            }
+
+            body[data-view="client"] { zoom: 0.72; }
+            
+            body[data-view="client"] .section-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+                break-inside: avoid;
+                padding: 1rem !important;
+                margin-bottom: 0.75rem !important;
+            }
+            
+            body[data-view="client"] .max-w-screen-xl { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+            body[data-view="client"] .mb-8 { margin-bottom: 0.75rem !important; }
+            body[data-view="client"] .total-display { font-size: 1.75rem !important; }
+            body[data-view="client"] .text-3xl { font-size: 1.35rem !important; }
+            body[data-view="client"] .text-2xl { font-size: 1.25rem !important; }
+            
+            body[data-view="client"] input, 
+            body[data-view="client"] select, 
+            body[data-view="client"] textarea {
+                display: none !important;
+            }
+        }
+
+        .pdf-export { background: white !important; }
+        
+        .pdf-export[data-view="internal"] .section-card {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0 !important;
+            margin-bottom: 1.5rem !important;
+            padding: 1.5rem !important;
+        }
+        .pdf-export[data-view="internal"] .xl\:grid-cols-12 { display: flex !important; flex-direction: column !important; gap: 1.5rem !important; }
+        .pdf-export[data-view="internal"] .xl\:col-span-5, .pdf-export[data-view="internal"] .xl\:col-span-7 { width: 100% !important; }
+        .pdf-export[data-view="internal"] .xl\:grid-cols-6, .pdf-export[data-view="internal"] .xl\:grid-cols-4 { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem !important; }
+        .pdf-export[data-view="internal"] .md\:grid-cols-3 { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 1rem !important; }
+        .pdf-export[data-view="internal"] .grid-cols-2 { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 1rem !important; }
+
+        .pdf-export[data-view="internal"] input, 
+        .pdf-export[data-view="internal"] select, 
+        .pdf-export[data-view="internal"] textarea {
+            background: #f8fafc !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
+        }
+
+        .pdf-export[data-view="client"] .section-card {
+            box-shadow: none !important;
+            border: 1px solid #e2e8f0 !important;
+            padding: 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+        .pdf-export[data-view="client"] .max-w-screen-xl { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+        .pdf-export[data-view="client"] .mb-8 { margin-bottom: 1rem !important; }
+        .pdf-export[data-view="client"] input, 
+        .pdf-export[data-view="client"] select, 
+        .pdf-export[data-view="client"] textarea { display: none !important; }
+
+        .modern-input {
+            background-color: #fff;
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        
+        .modern-input:focus {
+            border-color: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .stat-pill {
+            background: #f1f5f9;
+            padding: 2px 10px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-screen-xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-x-4">
+                    <div class="flex items-center gap-x-3">
+                        <div class="w-10 h-10 bg-sky-500 rounded-2xl flex items-center justify-center shadow-inner flex-shrink-0">
+                            <i class="fa-solid fa-cube text-white text-2xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="font-display text-2xl font-semibold tracking-tighter text-slate-900 leading-none">Three Dee Lab</h1>
+                            <p class="text-[10px] text-slate-500 tracking-[1px] -mt-0.5">SUBIC, ZAMBALES</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-3">
+                    <div class="flex items-center bg-slate-100 rounded-3xl p-1 shadow-inner">
+                        <button onclick="switchView('internal')" id="btn-internal"
+                                class="px-5 py-1.5 text-sm font-semibold rounded-3xl flex items-center gap-x-2 transition-all nav-active">
+                            <i class="fa-solid fa-calculator w-4"></i>
+                            <span>Internal</span>
+                        </button>
+                        <button onclick="switchView('client')" id="btn-client"
+                                class="px-5 py-1.5 text-sm font-semibold rounded-3xl flex items-center gap-x-2 text-slate-600 hover:text-slate-900 transition-all">
+                            <i class="fa-solid fa-eye w-4"></i>
+                            <span>Client View</span>
+                        </button>
+                    </div>
+
+                    <div class="h-8 w-px bg-slate-200"></div>
+
+                    <button onclick="newQuote()" 
+                            class="flex items-center gap-x-2 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 hover:bg-slate-50 rounded-2xl transition-colors">
+                        <i class="fa-solid fa-plus text-sky-500"></i>
+                        <span>New Quote</span>
+                    </button>
+                    
+                    <button onclick="resetQuote()" 
+                            class="flex items-center gap-x-2 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 hover:bg-red-50 hover:text-red-600 text-slate-600 rounded-2xl transition-colors">
+                        <i class="fa-solid fa-undo"></i>
+                        <span>Reset</span>
+                    </button>
+                    
+                    <button onclick="saveCurrentToHistory()" 
+                            class="flex items-center gap-x-2 px-4 py-2 text-sm font-semibold bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl transition-colors">
+                        <i class="fa-solid fa-save"></i>
+                        <span>Save Quote</span>
+                    </button>
+                    
+                    <button onclick="showHistoryModal()" 
+                            class="flex items-center gap-x-2 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 hover:bg-slate-50 rounded-2xl transition-colors">
+                        <i class="fa-solid fa-history"></i>
+                        <span>History</span>
+                    </button>
+
+                    <button onclick="printQuote()" 
+                            class="flex items-center gap-x-2 px-4 py-2 text-sm font-semibold bg-white border border-slate-300 hover:bg-slate-50 rounded-2xl transition-colors no-print">
+                        <i class="fa-solid fa-print text-slate-600"></i>
+                        <span>Print</span>
+                    </button>
+
+                    <button onclick="exportToPDF()" 
+                            class="flex items-center gap-x-2 px-5 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl transition-colors no-print">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Export PDF</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="internal-view-panel" class="max-w-screen-xl mx-auto px-6 pt-8 pb-12">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <div class="flex items-center gap-x-3">
+                    <div id="quote-number-badge"
+                         class="inline-flex items-center gap-x-2 bg-white border border-slate-200 text-slate-700 px-4 h-9 rounded-3xl text-sm font-mono font-semibold shadow-sm">
+                        <i class="fa-solid fa-file-invoice text-sky-500"></i>
+                        <span id="quote-number">TDL-20260711-001</span>
+                    </div>
+                    <div class="text-xs text-slate-500 flex items-center gap-x-1.5">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span id="quote-date">July 11, 2026</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-x-4 text-sm">
+                <div class="flex items-center gap-x-2 text-emerald-600 bg-emerald-50 px-3 py-1 rounded-2xl text-xs font-semibold">
+                    <i class="fa-solid fa-check-circle"></i>
+                    <span>Live calculations</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="final-price-hero" class="bg-white rounded-3xl shadow-sm border border-slate-200 p-8 mb-8 section-card">
+            <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-y-6">
+                <div>
+                    <div class="uppercase tracking-[2px] text-xs font-bold text-sky-600 mb-1">FINAL PRICE</div>
+                    <div class="flex items-baseline gap-x-3">
+                        <div id="total-price" class="total-display text-slate-900 tabular-nums">₱0.00</div>
+                    </div>
+                    <div class="flex items-center gap-x-2 mt-1">
+                        <div id="per-piece" class="text-2xl font-semibold text-slate-600 tabular-nums">₱0.00</div>
+                        <div class="text-sm text-slate-500 font-medium">per piece</div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-x-8">
+                    <div class="grid grid-cols-4 gap-x-6 text-center">
+                        <div>
+                            <div class="text-xs text-slate-500 tracking-wider">QTY</div>
+                            <div id="qty-display" class="text-3xl font-semibold text-slate-800 tabular-nums">0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 tracking-wider">MATERIALS</div>
+                            <div id="materials-total-display" class="text-3xl font-semibold text-slate-800 tabular-nums">₱0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 tracking-wider">MARGIN</div>
+                            <div id="margin-total-display" class="text-3xl font-semibold text-emerald-600 tabular-nums">₱0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-500 tracking-wider">HOURS</div>
+                            <div id="hours-display" class="text-3xl font-semibold text-indigo-600 tabular-nums">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            
+            <div class="xl:col-span-5 bg-white rounded-3xl shadow-sm border border-slate-200 p-7 section-card">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="font-semibold text-xl tracking-tight">Quote Summary</h2>
+                    <button onclick="loadSampleData()" 
+                            class="text-xs flex items-center gap-x-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-2xl transition-colors font-medium">
+                        <i class="fa-solid fa-magic text-xs"></i>
+                        <span>Load sample</span>
+                    </button>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-semibold tracking-wider text-slate-500 mb-1.5">CUSTOMER</label>
+                        <input type="text" id="customer" value="Walk-in customer"
+                               oninput="updateQuoteData()"
+                               class="modern-input w-full px-4 py-3 rounded-2xl text-lg font-medium border">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold tracking-wider text-slate-500 mb-1.5">JOB / DESCRIPTION</label>
+                        <input type="text" id="job" value="Souvenir"
+                               oninput="updateQuoteData()"
+                               class="modern-input w-full px-4 py-3 rounded-2xl text-lg font-medium border">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold tracking-wider text-slate-500 mb-1.5">QUANTITY</label>
+                            <div class="relative">
+                                <input type="number" id="quantity" value="1" min="1"
+                                       oninput="updateQuoteData()"
+                                       class="modern-input w-full px-4 py-3 rounded-2xl text-2xl font-semibold border text-center">
+                                <div class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-medium">pcs</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-col justify-end">
+                            <div class="text-xs text-slate-500 mb-1">Per piece will update automatically</div>
+                            <div id="per-piece-small" class="font-mono text-emerald-600 text-xl font-semibold">₱0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200 p-7 section-card" id="materials-section">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="font-semibold text-xl tracking-tight">Materials</h2>
+                        <p class="text-xs text-slate-500">Filament, resin, or hardware</p>
+                    </div>
+                    <button onclick="addMaterialRow()"
+                            class="flex items-center gap-x-2 px-5 py-2 text-sm font-semibold bg-sky-500 hover:bg-sky-600 text-white rounded-2xl transition-all active:scale-[0.985]">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Material</span>
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-[11px] text-slate-500 uppercase tracking-wider">
+                                <th class="text-left py-3 px-2 font-semibold min-w-[200px]">Material</th>
+                                <th class="text-left py-3 px-2 font-semibold w-[190px]">Amount Used</th>
+                                <th class="text-left py-3 px-2 font-semibold w-[190px]">Cost Basis</th>
+                                <th class="text-right py-3 px-2 font-semibold w-28">Total</th>
+                                <th class="w-8"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="materials-tbody" class="text-slate-700">
+                            <!-- Populated by JS -->
+                        </tbody>
+                        <tfoot>
+                            <tr class="border-t border-slate-200 font-semibold">
+                                <td colspan="3" class="py-3 px-2 text-right text-slate-600">Total Material Cost</td>
+                                <td id="materials-total" class="py-3 px-2 text-right font-bold text-lg tabular-nums text-slate-900">₱0.00</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="mt-3 text-[10px] text-slate-400 flex items-center gap-x-1">
+                    <i class="fa-solid fa-info-circle"></i>
+                    <span>Values automatically calculate based on the Amount unit and Cost Basis unit. (e.g., 100g @ ₱850 / kg = ₱85.00).</span>
+                </div>
+            </div>
+
+            <div class="xl:col-span-12 bg-white rounded-3xl shadow-sm border border-slate-200 p-7 section-card" id="cost-breakdown-section">
+                <h2 class="font-semibold text-xl tracking-tight mb-5">Other Costs &amp; Fees</h2>
+                
+                <!-- Perfectly aligned 10-item grid (5 columns x 2 rows on lg displays) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-x-5 gap-y-6">
+                    
+                    <!-- Working Hours -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-clock text-indigo-500 w-3"></i> 
+                            <span>WORKING HOURS</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">hrs</div>
+                            <input type="number" id="working-hours" step="0.5" min="0" value="0" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-10 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Total machine / manual time</div>
+                    </div>
+
+                    <!-- Labor Rate / Hr -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-user-clock text-violet-500 w-3"></i> 
+                            <span>LABOR RATE / HR</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="number" id="labor" step="1" value="50" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Hourly rate for operator</div>
+                    </div>
+
+                    <!-- Total Labor Cost (Calculated) -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-money-bill-wave text-emerald-500 w-3"></i> 
+                            <span>TOTAL LABOR COST</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="text" id="total-labor-display-input" readonly
+                                   class="w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed">
+                        </div>
+                        <div class="text-[10px] text-emerald-600/70 mt-1 font-medium">Rate × Hours (Auto)</div>
+                    </div>
+
+                    <!-- Power (Watts) -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-plug text-amber-500 w-3"></i> 
+                            <span>POWER (WATTS)</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">W</div>
+                            <input type="number" id="power-watts" step="10" value="300" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full px-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Avg consumption of printer</div>
+                    </div>
+
+                    <!-- Electricity Rate -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-coins text-amber-600 w-3"></i> 
+                            <span>ELEC RATE (₱/kWh)</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="number" id="electricity-rate" step="0.1" value="12" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Your local cost per kWh</div>
+                    </div>
+
+                    <!-- Total Electricity (Calculated) -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-bolt-lightning text-amber-500 w-3"></i> 
+                            <span>TOTAL ELEC COST</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="text" id="total-electricity-display-input" readonly
+                                   class="w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed">
+                        </div>
+                        <div class="text-[10px] text-amber-600/70 mt-1 font-medium">(kW × Hours × Rate)</div>
+                    </div>
+
+                    <!-- Printer Wear -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-tools text-orange-500 w-3"></i> 
+                            <span>PRINTER WEAR</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="number" id="printer-wear" step="0.01" value="35" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Depreciation / maintenance</div>
+                    </div>
+
+                    <!-- Packaging -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-box text-sky-500 w-3"></i> 
+                            <span>PACKAGING</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="number" id="packaging" step="0.01" value="45" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Box, bubble wrap, label</div>
+                    </div>
+
+                    <!-- Design Fee -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-palette text-pink-500 w-3"></i> 
+                            <span>DESIGN FEE</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="number" id="design-fee" step="0.01" value="0" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Custom modeling (if any)</div>
+                    </div>
+
+                    <!-- Other / Misc -->
+                    <div>
+                        <label class="flex items-center gap-x-2 text-xs font-semibold tracking-wider text-slate-500 mb-1.5">
+                            <i class="fa-solid fa-ellipsis-h text-slate-400 w-3"></i> 
+                            <span>OTHER / MISC</span>
+                        </label>
+                        <div class="relative">
+                            <div class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">₱</div>
+                            <input type="number" id="other-misc" step="0.01" value="0" 
+                                   oninput="updateQuoteData()"
+                                   class="modern-input w-full pl-8 pr-4 py-3 rounded-2xl font-semibold text-lg border">
+                        </div>
+                        <div class="text-[10px] text-slate-400 mt-1">Delivery, rush fee, etc.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-12 bg-white rounded-3xl shadow-sm border border-slate-200 p-7 section-card">
+                <h2 class="font-semibold text-xl tracking-tight mb-5">Margins &amp; Reserves</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="border border-slate-100 rounded-2xl p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="font-semibold flex items-center gap-x-2">
+                                    <i class="fa-solid fa-exclamation-triangle text-amber-500"></i> 
+                                    <span>Failure Reserve</span>
+                                </div>
+                                <div class="text-xs text-slate-500">Reprint buffer</div>
+                            </div>
+                            <div class="text-right">
+                                <input type="number" id="failure-pct" value="8" step="0.5" min="0" max="50"
+                                       oninput="updateQuoteData()"
+                                       class="w-16 text-right font-mono text-lg font-bold bg-transparent border-b border-slate-300 focus:outline-none">
+                                <span class="text-xs text-slate-400">%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline justify-between">
+                            <div class="text-xs text-slate-500">Amount</div>
+                            <div id="failure-amt" class="font-mono text-xl font-semibold text-amber-600 tabular-nums">₱0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-100 rounded-2xl p-5">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="font-semibold flex items-center gap-x-2">
+                                    <i class="fa-solid fa-globe text-sky-500"></i> 
+                                    <span>Platform Reserve</span>
+                                </div>
+                                <div class="text-xs text-slate-500">Online / marketplace fees</div>
+                            </div>
+                            <div class="text-right">
+                                <input type="number" id="platform-pct" value="5" step="0.5" min="0" max="30"
+                                       oninput="updateQuoteData()"
+                                       class="w-16 text-right font-mono text-lg font-bold bg-transparent border-b border-slate-300 focus:outline-none">
+                                <span class="text-xs text-slate-400">%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline justify-between">
+                            <div class="text-xs text-slate-500">Amount</div>
+                            <div id="platform-amt" class="font-mono text-xl font-semibold text-sky-600 tabular-nums">₱0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="border border-slate-100 rounded-2xl p-5 bg-emerald-50/60">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="font-semibold flex items-center gap-x-2">
+                                    <i class="fa-solid fa-chart-line text-emerald-600"></i> 
+                                    <span>Profit Margin</span>
+                                </div>
+                                <div class="text-xs text-emerald-600/70">Your margin</div>
+                            </div>
+                            <div class="text-right">
+                                <input type="number" id="profit-pct" value="35" step="1" min="0" max="100"
+                                       oninput="updateQuoteData()"
+                                       class="w-16 text-right font-mono text-lg font-bold bg-transparent border-b border-emerald-300 focus:outline-none text-emerald-700">
+                                <span class="text-xs text-emerald-600">%</span>
+                            </div>
+                        </div>
+                        <div class="flex items-baseline justify-between">
+                            <div class="text-xs text-emerald-600/70">Amount</div>
+                            <div id="profit-amt" class="font-mono text-xl font-semibold text-emerald-700 tabular-nums">₱0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm section-card">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-y-4">
+                <div class="flex items-center gap-x-8 text-sm">
+                    <div>
+                        <span class="text-slate-500">Subtotal</span>
+                        <span id="subtotal-display" class="ml-3 font-mono text-xl font-semibold tabular-nums">₱0.00</span>
+                    </div>
+                    <div class="h-3 w-px bg-slate-200"></div>
+                    <div>
+                        <span class="text-slate-500">Total Margins</span>
+                        <span id="margins-display" class="ml-3 font-mono text-xl font-semibold text-emerald-600 tabular-nums">₱0.00</span>
+                    </div>
+                </div>
+                
+                <div class="text-right">
+                    <div class="text-xs text-slate-500">GRAND TOTAL</div>
+                    <div id="grand-total-small" class="font-mono text-4xl font-bold text-slate-900 tabular-nums">₱0.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client View -->
+    <div id="client-view-panel" class="hidden max-w-screen-xl mx-auto px-6 pt-8 pb-12">
+        <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+            
+            <div class="quote-header px-10 py-8 text-white">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-x-4">
+                            <div class="w-11 h-11 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center flex-shrink-0">
+                                <i class="fa-solid fa-cube text-white text-3xl"></i>
+                            </div>
+                            <div>
+                                <div class="font-display text-3xl tracking-tighter font-semibold text-white">Three Dee Lab</div>
+                                <div class="text-white/70 text-sm tracking-widest">SUBIC • ZAMBALES • PHILIPPINES</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs tracking-[3px] opacity-75">QUOTE</div>
+                        <div id="client-quote-number" class="font-mono text-3xl font-bold tracking-tighter"></div>
+                        <div id="client-quote-date" class="text-sm opacity-75"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-10 pt-8 pb-10">
+                <div class="grid grid-cols-2 gap-x-10 text-sm mb-8">
+                    <div>
+                        <div class="text-xs text-slate-500 tracking-wider">BILLED TO</div>
+                        <div id="client-customer" class="font-semibold text-2xl text-slate-800"></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500 tracking-wider">JOB</div>
+                        <div id="client-job" class="font-semibold text-2xl text-slate-800"></div>
+                        <div class="mt-1 text-emerald-600 font-medium">
+                            <span id="client-quantity"></span> pieces
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div class="text-xs font-bold tracking-[1.5px] text-slate-400 mb-4 px-1">WHAT'S INCLUDED</div>
+                    
+                    <div class="divide-y divide-slate-100 text-sm">
+                        <div class="flex justify-between items-center py-4">
+                            <div class="flex items-center gap-x-3 text-slate-700">
+                                <i class="fa-solid fa-layer-group text-sky-500 w-5"></i>
+                                <span>Materials &amp; Consumables</span>
+                            </div>
+                            <div id="client-materials" class="font-medium tabular-nums text-slate-800">₱0.00</div>
+                        </div>
+
+                        <div class="flex justify-between items-center py-4">
+                            <div class="flex items-center gap-x-3 text-slate-700">
+                                <i class="fa-solid fa-wrench text-orange-500 w-5"></i>
+                                <span>Production, Labor &amp; Packaging</span>
+                            </div>
+                            <div id="client-production" class="font-medium tabular-nums text-slate-800">₱0.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t flex justify-between items-end">
+                    <div>
+                        <div class="text-xs text-slate-500">TOTAL DUE</div>
+                        <div id="client-total" class="font-display text-4xl font-bold text-slate-900 tabular-nums">₱0.00</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500">PER PIECE</div>
+                        <div id="client-per-piece" class="font-mono text-2xl font-semibold text-emerald-600 tabular-nums">₱0.00</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <div class="text-xs text-slate-400">Thank you for choosing Three Dee Lab!</div>
+                    <div class="text-[10px] text-slate-400 mt-1">This quote is valid for 14 days • Prices in Philippine Pesos (₱)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="history-modal" onclick="if (event.target.id === 'history-modal') hideHistoryModal()" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden">
+            <div class="px-8 py-6 border-b flex items-center justify-between">
+                <div>
+                    <h3 class="font-semibold text-2xl tracking-tight">Quote History</h3>
+                    <p class="text-sm text-slate-500">Previously saved quotes (stored in your browser)</p>
+                </div>
+                <button onclick="hideHistoryModal()" class="text-3xl leading-none text-slate-300 hover:text-slate-500">&times;</button>
+            </div>
+            
+            <div class="p-8 max-h-[65vh] overflow-auto" id="history-content">
+                <!-- Populated dynamically -->
+            </div>
+            
+            <div class="px-8 py-5 border-t bg-slate-50 flex justify-between items-center">
+                <button onclick="clearAllHistory()" 
+                        class="text-xs px-4 py-2 text-red-600 hover:bg-red-50 rounded-2xl font-medium flex items-center gap-x-2">
+                    <i class="fa-solid fa-trash"></i>
+                    <span>Clear all history</span>
+                </button>
+                <button onclick="hideHistoryModal()" 
+                        class="px-8 py-2.5 text-sm font-semibold bg-slate-900 text-white rounded-2xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center text-xs text-slate-400 py-8">
+        Three Dee Lab Pricing Calculator • Made for internal use • Data saved locally in browser
+    </footer>
+
+    <script>
+        function initializeTailwind() {
+            document.documentElement.style.setProperty('--accent', '#0ea5e9');
+        }
+
+        let currentQuote = {
+            id: '',
+            date: '',
+            customer: 'Walk-in customer',
+            job: 'Souvenir',
+            quantity: 1,
+            materials: [],
+            printerWear: 35,
+            labor: 50,
+            workingHours: 2, 
+            calculatedLaborCost: 100,
+            powerWatts: 250,
+            electricityRate: 12,
+            calculatedElectricityCost: 6,
+            packaging: 45,
+            designFee: 0,
+            otherMisc: 0,
+            failurePct: 8,
+            platformPct: 5,
+            profitPct: 35
+        };
+
+        let quotesHistory = [];
+        let storageAvailable = true;
+        let currentView = 'internal';
+
+        // Helper maps for metric/imperial unit conversions 
+        // Conversions are anchored to base units: g (weight), ml (volume), mm (length), pcs (count)
+        const unitMultipliers = {
+            'g': 1, 'kg': 1000, 'oz': 28.3495, 'lbs': 453.592,
+            'ml': 1, 'L': 1000, 'fl_oz': 29.5735, 'gal': 3785.41,
+            'mm': 1, 'cm': 10, 'm': 1000, 'in': 25.4, 'ft': 304.8,
+            'pcs': 1
+        };
+
+        function getUnitCategory(unit) {
+            if (['g', 'kg', 'oz', 'lbs'].includes(unit)) return 'weight';
+            if (['ml', 'L', 'fl_oz', 'gal'].includes(unit)) return 'volume';
+            if (['mm', 'cm', 'm', 'in', 'ft'].includes(unit)) return 'length';
+            return 'count';
+        }
+
+        function safeGetItem(key) {
+            try { return localStorage.getItem(key); } catch (e) { storageAvailable = false; return null; }
+        }
+
+        function safeSetItem(key, value) {
+            try { localStorage.setItem(key, value); return true; } catch (e) { storageAvailable = false; return false; }
+        }
+
+        function loadFromStorage() {
+            const saved = safeGetItem('tdl_quotes_history');
+            if (saved) {
+                try { quotesHistory = JSON.parse(saved); } catch (e) { quotesHistory = []; }
+            }
+            
+            const lastQuote = safeGetItem('tdl_current_quote');
+            if (lastQuote) {
+                try { 
+                    currentQuote = JSON.parse(lastQuote); 
+                    
+                    // Migration: Convert old weight_g format to qty/unit format
+                    if (currentQuote.materials) {
+                        currentQuote.materials = currentQuote.materials.map(m => {
+                            if (m.weight_g !== undefined) {
+                                return { id: m.id, name: m.name, qty: m.weight_g, unit: 'g', unit_price: m.price_per_kg };
+                            }
+                            return m;
+                        });
+                    }
+                    
+                    // Migration: Map old electricity field to Watts + Rate
+                    if (currentQuote.electricity !== undefined && currentQuote.powerWatts === undefined) {
+                        currentQuote.powerWatts = 250;
+                        currentQuote.electricityRate = 12;
+                        currentQuote.calculatedElectricityCost = currentQuote.electricity || 0;
+                        delete currentQuote.electricity;
+                    }
+                } catch (e) { }
+            }
+        }
+
+        function saveToStorage() {
+            if (!storageAvailable) return;
+            safeSetItem('tdl_quotes_history', JSON.stringify(quotesHistory));
+            safeSetItem('tdl_current_quote', JSON.stringify(currentQuote));
+        }
+
+        function generateQuoteNumber() {
+            const today = new Date();
+            const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+            const todayQuotes = quotesHistory.filter(q => q.id && q.id.includes(dateStr));
+            const seq = (todayQuotes.length + 1).toString().padStart(3, '0');
+            return `TDL-${dateStr}-${seq}`;
+        }
+
+        function formatCurrency(amount) {
+            if (isNaN(amount) || amount === null) amount = 0;
+            return '₱' + amount.toLocaleString('en-PH', { 
+                minimumFractionDigits: 2, 
+                maximumFractionDigits: 2 
+            });
+        }
+
+        function formatDateTime(dateInput) {
+            if (!dateInput) return 'N/A';
+            return dayjs(dateInput).format('MMM DD, YYYY • hh:mm A');
+        }
+
+        function calculateTotals() {
+            let materialCost = 0;
+            currentQuote.materials.forEach(mat => {
+                const qty = parseFloat(mat.qty) || 0;
+                const price = parseFloat(mat.unit_price) || 0;
+                
+                let basis_unit = mat.basis_unit;
+                if (!basis_unit) {
+                    const fallbackMap = {
+                        'g': 'kg', 'kg': 'kg', 'oz': 'lbs', 'lbs': 'lbs',
+                        'ml': 'L', 'L': 'L', 'fl_oz': 'gal', 'gal': 'gal',
+                        'mm': 'm', 'cm': 'm', 'm': 'm', 'in': 'ft', 'ft': 'ft',
+                        'pcs': 'pcs'
+                    };
+                    basis_unit = fallbackMap[mat.unit] || 'pcs';
+                    mat.basis_unit = basis_unit;
+                }
+
+                // Convert units if they match category (e.g., oz to lbs, g to kg, etc.)
+                let conversion = 1;
+                if (getUnitCategory(mat.unit) === getUnitCategory(basis_unit)) {
+                    conversion = unitMultipliers[mat.unit] / unitMultipliers[basis_unit];
+                }
+
+                materialCost += qty * price * conversion;
+            });
+            currentQuote.materialCost = parseFloat(materialCost.toFixed(2));
+
+            // Link Labor Rate to Working Hours calculation
+            const hourlyRate = parseFloat(currentQuote.labor) || 0;
+            const hours = parseFloat(currentQuote.workingHours) || 0;
+            currentQuote.calculatedLaborCost = parseFloat((hourlyRate * hours).toFixed(2));
+
+            // Link Electricity Cost to Power (Watts) and Rate
+            const watts = parseFloat(currentQuote.powerWatts) || 0;
+            const eRate = parseFloat(currentQuote.electricityRate) || 0;
+            currentQuote.calculatedElectricityCost = parseFloat(((watts / 1000) * hours * eRate).toFixed(2));
+
+            const otherCosts = 
+                currentQuote.calculatedElectricityCost +
+                (parseFloat(currentQuote.printerWear) || 0) +
+                currentQuote.calculatedLaborCost + 
+                (parseFloat(currentQuote.packaging) || 0) +
+                (parseFloat(currentQuote.designFee) || 0) +
+                (parseFloat(currentQuote.otherMisc) || 0);
+            
+            currentQuote.subtotal = parseFloat((currentQuote.materialCost + otherCosts).toFixed(2));
+
+            currentQuote.failureAmt = parseFloat((currentQuote.subtotal * (currentQuote.failurePct / 100)).toFixed(2));
+            currentQuote.platformAmt = parseFloat((currentQuote.subtotal * (currentQuote.platformPct / 100)).toFixed(2));
+            currentQuote.profitAmt = parseFloat((currentQuote.subtotal * (currentQuote.profitPct / 100)).toFixed(2));
+
+            currentQuote.totalMargins = parseFloat((currentQuote.failureAmt + currentQuote.platformAmt + currentQuote.profitAmt).toFixed(2));
+            currentQuote.grandTotal = parseFloat((currentQuote.subtotal + currentQuote.totalMargins).toFixed(2));
+            
+            const qty = parseInt(currentQuote.quantity) || 1;
+            currentQuote.perPiece = parseFloat((currentQuote.grandTotal / qty).toFixed(2));
+
+            return currentQuote;
+        }
+
+        function updateUI() {
+            calculateTotals();
+
+            document.getElementById('quote-number').textContent = currentQuote.id || 'TDL-XXXXXX-XXX';
+            document.getElementById('quote-date').textContent = formatDateTime(currentQuote.date);
+
+            document.getElementById('total-price').textContent = formatCurrency(currentQuote.grandTotal);
+            document.getElementById('per-piece').textContent = formatCurrency(currentQuote.perPiece);
+            document.getElementById('qty-display').textContent = currentQuote.quantity || 0;
+            document.getElementById('materials-total-display').textContent = formatCurrency(currentQuote.materialCost || 0);
+            document.getElementById('margin-total-display').textContent = formatCurrency(currentQuote.totalMargins || 0);
+            document.getElementById('hours-display').textContent = currentQuote.workingHours || 0;
+
+            document.getElementById('customer').value = currentQuote.customer || '';
+            document.getElementById('job').value = currentQuote.job || '';
+            document.getElementById('quantity').value = currentQuote.quantity || 1;
+            document.getElementById('per-piece-small').textContent = formatCurrency(currentQuote.perPiece);
+
+            document.getElementById('power-watts').value = currentQuote.powerWatts || 0;
+            document.getElementById('electricity-rate').value = currentQuote.electricityRate || 0;
+            document.getElementById('printer-wear').value = currentQuote.printerWear || 0;
+            document.getElementById('labor').value = currentQuote.labor || 0; 
+            document.getElementById('packaging').value = currentQuote.packaging || 0;
+            document.getElementById('design-fee').value = currentQuote.designFee || 0;
+            document.getElementById('other-misc').value = currentQuote.otherMisc || 0;
+            document.getElementById('working-hours').value = currentQuote.workingHours || 0;
+            
+            // Update the new read-only Calculated Labor Cost Box
+            const totalLaborDisplay = document.getElementById('total-labor-display-input');
+            if (totalLaborDisplay) {
+                totalLaborDisplay.value = (currentQuote.calculatedLaborCost || 0).toLocaleString('en-PH', { 
+                    minimumFractionDigits: 2, maximumFractionDigits: 2 
+                });
+            }
+            
+            const totalElecDisplay = document.getElementById('total-electricity-display-input');
+            if (totalElecDisplay) {
+                totalElecDisplay.value = (currentQuote.calculatedElectricityCost || 0).toLocaleString('en-PH', { 
+                    minimumFractionDigits: 2, maximumFractionDigits: 2 
+                });
+            }
+
+            document.getElementById('failure-pct').value = currentQuote.failurePct || 0;
+            document.getElementById('platform-pct').value = currentQuote.platformPct || 0;
+            document.getElementById('profit-pct').value = currentQuote.profitPct || 0;
+
+            document.getElementById('failure-amt').textContent = formatCurrency(currentQuote.failureAmt || 0);
+            document.getElementById('platform-amt').textContent = formatCurrency(currentQuote.platformAmt || 0);
+            document.getElementById('profit-amt').textContent = formatCurrency(currentQuote.profitAmt || 0);
+
+            document.getElementById('subtotal-display').textContent = formatCurrency(currentQuote.subtotal || 0);
+            document.getElementById('margins-display').textContent = formatCurrency(currentQuote.totalMargins || 0);
+            document.getElementById('grand-total-small').textContent = formatCurrency(currentQuote.grandTotal || 0);
+
+            renderMaterialsTable();
+
+            if (!document.getElementById('client-view-panel').classList.contains('hidden')) {
+                updateClientView();
+            }
+
+            saveToStorage();
+        }
+
+        function renderMaterialsTable() {
+            const tbody = document.getElementById('materials-tbody');
+            tbody.innerHTML = '';
+
+            if (!currentQuote.materials || currentQuote.materials.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td colspan="5" class="px-3 py-8 text-center text-slate-400">
+                        <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-40"></i>
+                        <span class="text-sm">No materials added yet. Click "Add Material" above.</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                document.getElementById('materials-total').textContent = formatCurrency(0);
+                return;
+            }
+
+            let totalMat = 0;
+
+            currentQuote.materials.forEach((mat, index) => {
+                const qty = parseFloat(mat.qty) || 0;
+                const price = parseFloat(mat.unit_price) || 0;
+                
+                let basis_unit = mat.basis_unit;
+                if (!basis_unit) {
+                    const fallbackMap = {
+                        'g': 'kg', 'kg': 'kg', 'oz': 'lbs', 'lbs': 'lbs',
+                        'ml': 'L', 'L': 'L', 'fl_oz': 'gal', 'gal': 'gal',
+                        'mm': 'm', 'cm': 'm', 'm': 'm', 'in': 'ft', 'ft': 'ft',
+                        'pcs': 'pcs'
+                    };
+                    basis_unit = fallbackMap[mat.unit] || 'pcs';
+                    mat.basis_unit = basis_unit;
+                }
+
+                let conversion = 1;
+                if (getUnitCategory(mat.unit) === getUnitCategory(basis_unit)) {
+                    conversion = unitMultipliers[mat.unit] / unitMultipliers[basis_unit];
+                }
+                
+                const lineTotal = qty * price * conversion;
+                totalMat += lineTotal;
+
+                // Generator for synchronized dropdown options
+                const generateUnitOptions = (selectedUnit, isBasis) => {
+                    const formatLabel = (label) => isBasis ? `/ ${label}` : label;
+                    return `
+                        <optgroup label="Weight (Metric)">
+                            <option value="g" ${selectedUnit === 'g' ? 'selected' : ''}>${formatLabel('g')}</option>
+                            <option value="kg" ${selectedUnit === 'kg' ? 'selected' : ''}>${formatLabel('kg')}</option>
+                        </optgroup>
+                        <optgroup label="Weight (Imperial)">
+                            <option value="oz" ${selectedUnit === 'oz' ? 'selected' : ''}>${formatLabel('oz')}</option>
+                            <option value="lbs" ${selectedUnit === 'lbs' ? 'selected' : ''}>${formatLabel('lbs')}</option>
+                        </optgroup>
+                        <optgroup label="Volume (Metric)">
+                            <option value="ml" ${selectedUnit === 'ml' ? 'selected' : ''}>${formatLabel('mL')}</option>
+                            <option value="L" ${selectedUnit === 'L' ? 'selected' : ''}>${formatLabel('L')}</option>
+                        </optgroup>
+                        <optgroup label="Volume (Imperial)">
+                            <option value="fl_oz" ${selectedUnit === 'fl_oz' ? 'selected' : ''}>${formatLabel('fl oz')}</option>
+                            <option value="gal" ${selectedUnit === 'gal' ? 'selected' : ''}>${formatLabel('gal')}</option>
+                        </optgroup>
+                        <optgroup label="Length (Metric)">
+                            <option value="mm" ${selectedUnit === 'mm' ? 'selected' : ''}>${formatLabel('mm')}</option>
+                            <option value="cm" ${selectedUnit === 'cm' ? 'selected' : ''}>${formatLabel('cm')}</option>
+                            <option value="m" ${selectedUnit === 'm' ? 'selected' : ''}>${formatLabel('m')}</option>
+                        </optgroup>
+                        <optgroup label="Length (Imperial)">
+                            <option value="in" ${selectedUnit === 'in' ? 'selected' : ''}>${formatLabel('in')}</option>
+                            <option value="ft" ${selectedUnit === 'ft' ? 'selected' : ''}>${formatLabel('ft')}</option>
+                        </optgroup>
+                        <optgroup label="Count">
+                            <option value="pcs" ${selectedUnit === 'pcs' ? 'selected' : ''}>${formatLabel('pc')}</option>
+                        </optgroup>
+                    `;
+                };
+
+                const tr = document.createElement('tr');
+                tr.className = `material-row border-b border-slate-100 last:border-none`;
+                tr.innerHTML = `
+                    <td class="px-2 py-3">
+                        <input type="text" value="${mat.name || ''}" placeholder="Material name..."
+                               onchange="updateMaterial(${index}, 'name', this.value)"
+                               class="w-full modern-input px-3 py-1.5 rounded-lg text-sm font-medium border bg-white">
+                    </td>
+                    <td class="px-2 py-3">
+                        <div class="flex items-center gap-x-1">
+                            <input type="number" value="${mat.qty || ''}" step="any" 
+                                   onchange="updateMaterial(${index}, 'qty', this.value)"
+                                   class="w-20 text-right modern-input px-2 py-1.5 rounded-lg text-sm font-mono border">
+                            <select onchange="updateMaterial(${index}, 'unit', this.value)"
+                                    class="w-[90px] modern-input px-1 py-1.5 rounded-lg text-xs font-medium border bg-slate-50 text-slate-600 focus:ring-0">
+                                ${generateUnitOptions(mat.unit, false)}
+                            </select>
+                        </div>
+                    </td>
+                    <td class="px-2 py-3">
+                        <div class="flex items-center gap-x-1.5">
+                            <span class="text-slate-400 text-sm font-medium">₱</span>
+                            <input type="number" value="${mat.unit_price || ''}" step="any" 
+                                   onchange="updateMaterial(${index}, 'unit_price', this.value)"
+                                   class="w-20 text-right modern-input px-2 py-1.5 rounded-lg text-sm font-mono border">
+                            <select onchange="updateMaterial(${index}, 'basis_unit', this.value)"
+                                    class="w-[90px] modern-input px-1 py-1.5 rounded-lg text-xs font-medium border bg-slate-50 text-slate-600 focus:ring-0">
+                                ${generateUnitOptions(basis_unit, true)}
+                            </select>
+                        </div>
+                    </td>
+                    <td class="px-2 py-3 text-right font-mono font-semibold text-emerald-700 tabular-nums">
+                        ${formatCurrency(lineTotal)}
+                    </td>
+                    <td class="px-1 py-3 text-center">
+                        <button onclick="removeMaterial(${index})" 
+                                class="text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                            <i class="fa-solid fa-times text-sm"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('materials-total').textContent = formatCurrency(totalMat);
+        }
+
+        function updateMaterial(index, field, value) {
+            if (!currentQuote.materials[index]) return;
+            
+            if (field === 'qty' || field === 'unit_price') {
+                currentQuote.materials[index][field] = parseFloat(value) || 0;
+            } else if (field === 'unit') {
+                const oldUnit = currentQuote.materials[index].unit;
+                currentQuote.materials[index].unit = value;
+                
+                const oldCat = getUnitCategory(oldUnit);
+                const newCat = getUnitCategory(value);
+                
+                // Smart auto-switch basis unit if changing into a different measurement category
+                if (oldCat !== newCat) {
+                    const defaultBasis = {
+                        'g': 'kg', 'kg': 'kg', 'oz': 'lbs', 'lbs': 'lbs',
+                        'ml': 'L', 'L': 'L', 'fl_oz': 'gal', 'gal': 'gal',
+                        'mm': 'm', 'cm': 'm', 'm': 'm', 'in': 'ft', 'ft': 'ft',
+                        'pcs': 'pcs'
+                    };
+                    currentQuote.materials[index].basis_unit = defaultBasis[value] || 'pcs';
+                }
+            } else {
+                currentQuote.materials[index][field] = value;
+            }
+            updateUI();
+        }
+
+        function addMaterialRow() {
+            if (!currentQuote.materials) currentQuote.materials = [];
+            currentQuote.materials.push({
+                id: Date.now(), name: 'New Material', qty: 100, unit: 'g', unit_price: 850, basis_unit: 'kg'
+            });
+            updateUI();
+        }
+
+        function removeMaterial(index) {
+            if (confirm('Remove this material?')) {
+                currentQuote.materials.splice(index, 1);
+                updateUI();
+            }
+        }
+
+        function updateQuoteData() {
+            currentQuote.customer = document.getElementById('customer').value;
+            currentQuote.job = document.getElementById('job').value;
+            currentQuote.quantity = parseInt(document.getElementById('quantity').value) || 1;
+            
+            currentQuote.powerWatts = parseFloat(document.getElementById('power-watts').value) || 0;
+            currentQuote.electricityRate = parseFloat(document.getElementById('electricity-rate').value) || 0;
+            currentQuote.printerWear = parseFloat(document.getElementById('printer-wear').value) || 0;
+            currentQuote.labor = parseFloat(document.getElementById('labor').value) || 0; 
+            currentQuote.packaging = parseFloat(document.getElementById('packaging').value) || 0;
+            currentQuote.designFee = parseFloat(document.getElementById('design-fee').value) || 0;
+            currentQuote.otherMisc = parseFloat(document.getElementById('other-misc').value) || 0;
+            currentQuote.workingHours = parseFloat(document.getElementById('working-hours').value) || 0;
+            
+            currentQuote.failurePct = parseFloat(document.getElementById('failure-pct').value) || 0;
+            currentQuote.platformPct = parseFloat(document.getElementById('platform-pct').value) || 0;
+            currentQuote.profitPct = parseFloat(document.getElementById('profit-pct').value) || 0;
+
+            updateUI();
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.body.setAttribute('data-view', view);
+            
+            const internalBtn = document.getElementById('btn-internal');
+            const clientBtn = document.getElementById('btn-client');
+            const internalPanel = document.getElementById('internal-view-panel');
+            const clientPanel = document.getElementById('client-view-panel');
+
+            if (view === 'internal') {
+                internalBtn.classList.add('nav-active');
+                clientBtn.classList.remove('nav-active', 'text-white');
+                clientBtn.classList.add('text-slate-600');
+                
+                clientPanel.classList.add('hidden');
+                internalPanel.classList.remove('hidden');
+                updateUI(); 
+            } else {
+                clientBtn.classList.add('nav-active');
+                internalBtn.classList.remove('nav-active');
+                internalBtn.classList.add('text-slate-600');
+                
+                internalPanel.classList.add('hidden');
+                clientPanel.classList.remove('hidden');
+                updateClientView();
+            }
+        }
+
+        function updateClientView() {
+            calculateTotals();
+            
+            document.getElementById('client-quote-number').textContent = currentQuote.id;
+            document.getElementById('client-quote-date').textContent = formatDateTime(currentQuote.date);
+            document.getElementById('client-customer').textContent = currentQuote.customer || 'Walk-in customer';
+            document.getElementById('client-job').textContent = currentQuote.job || 'Custom 3D Print';
+            document.getElementById('client-quantity').textContent = currentQuote.quantity || 1;
+            document.getElementById('client-total').textContent = formatCurrency(currentQuote.grandTotal);
+            document.getElementById('client-per-piece').textContent = formatCurrency(currentQuote.perPiece);
+
+            const marginMultiplier = currentQuote.subtotal > 0 ? (currentQuote.grandTotal / currentQuote.subtotal) : 1;
+            
+            const clientMaterialsCost = (currentQuote.materialCost || 0) * marginMultiplier;
+            document.getElementById('client-materials').textContent = formatCurrency(clientMaterialsCost);
+
+            // Refactored to use calculated costs for accurate client presentation
+            const productionTotal = 
+                (currentQuote.calculatedElectricityCost || 0) +
+                (parseFloat(currentQuote.printerWear) || 0) +
+                (currentQuote.calculatedLaborCost || 0) + 
+                (parseFloat(currentQuote.packaging) || 0) +
+                (parseFloat(currentQuote.designFee) || 0) +
+                (parseFloat(currentQuote.otherMisc) || 0);
+
+            const clientProductionCost = productionTotal * marginMultiplier;
+            document.getElementById('client-production').textContent = formatCurrency(clientProductionCost);
+        }
+
+        function newQuote() {
+            if (currentQuote.grandTotal > 0 && !confirm('Start a new quote? Current unsaved changes will be lost.')) {
+                return;
+            }
+            
+            const today = new Date();
+            currentQuote = {
+                id: generateQuoteNumber(),
+                date: today.toISOString(),
+                customer: 'Walk-in customer',
+                job: 'Souvenir',
+                quantity: 5,
+                materials: [
+                    { id: Date.now(), name: 'PLA Filament (Black)', qty: 180, unit: 'g', unit_price: 820, basis_unit: 'kg' },
+                    { id: Date.now() + 1, name: 'Threaded Inserts', qty: 4, unit: 'pcs', unit_price: 15, basis_unit: 'pcs' }
+                ],
+                powerWatts: 300,
+                electricityRate: 12,
+                printerWear: 28,
+                labor: 60,
+                packaging: 65,
+                designFee: 150,
+                otherMisc: 0,
+                failurePct: 8,
+                platformPct: 5,
+                profitPct: 32
+            };
+            
+            updateUI();
+            switchView('internal');
+        }
+
+        function resetQuote() {
+            if (!confirm('Reset all values for this quote? This cannot be undone.')) return;
+
+            currentQuote.materials = [];
+            currentQuote.quantity = 1;
+            currentQuote.customer = '';
+            currentQuote.job = '';
+            currentQuote.powerWatts = 250;
+            currentQuote.electricityRate = 12;
+            currentQuote.printerWear = 0;
+            currentQuote.labor = 0;
+            currentQuote.packaging = 0;
+            currentQuote.designFee = 0;
+            currentQuote.otherMisc = 0;
+            currentQuote.workingHours = 0;
+            currentQuote.failurePct = 0;
+            currentQuote.platformPct = 0;
+            currentQuote.profitPct = 0;
+
+            updateUI();
+            showToast('Quote has been reset.');
+        }
+
+        function loadSampleData() {
+            const today = new Date();
+            currentQuote = {
+                id: currentQuote.id || generateQuoteNumber(),
+                date: currentQuote.date || today.toISOString(),
+                customer: 'Juan Dela Cruz',
+                job: 'Custom Souvenir Keychains',
+                quantity: 25,
+                materials: [
+                    { id: Date.now(), name: 'PLA Filament (Matte White)', qty: 420, unit: 'g', unit_price: 795, basis_unit: 'kg' },
+                    { id: Date.now() + 2, name: 'PETG (Clear)', qty: 95, unit: 'g', unit_price: 980, basis_unit: 'kg' }
+                ],
+                powerWatts: 280,
+                electricityRate: 12.5,
+                printerWear: 95,
+                labor: 100, 
+                packaging: 125,
+                designFee: 350,
+                otherMisc: 80,
+                failurePct: 7,
+                platformPct: 4,
+                profitPct: 38
+            };
+            
+            updateUI();
+            switchView('internal');
+        }
+
+        function saveCurrentToHistory() {
+            calculateTotals();
+            const existingIndex = quotesHistory.findIndex(q => q.id === currentQuote.id);
+            const quoteToSave = JSON.parse(JSON.stringify(currentQuote));
+            
+            if (existingIndex >= 0) {
+                quotesHistory[existingIndex] = quoteToSave;
+            } else {
+                quotesHistory.unshift(quoteToSave);
+            }
+            
+            if (quotesHistory.length > 25) quotesHistory.length = 25;
+            saveToStorage();
+            showToast('Quote saved to history!');
+        }
+
+        function showHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            const content = document.getElementById('history-content');
+            
+            if (quotesHistory.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center py-12 text-slate-400">
+                        <i class="fa-solid fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p>No saved quotes yet.</p>
+                        <p class="text-xs mt-1">Use the "Save Quote" button after making changes.</p>
+                    </div>
+                `;
+            } else {
+                let html = `<div class="space-y-3">`;
+                quotesHistory.forEach((quote, idx) => {
+                    const dateStr = formatDateTime(quote.date);
+                    html += `
+                        <div class="flex items-center justify-between border border-slate-100 hover:border-sky-200 transition-colors rounded-2xl p-4 group">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-x-3">
+                                    <div class="font-mono text-xs bg-slate-100 text-slate-500 px-3 py-px rounded font-medium">${quote.id}</div>
+                                    <div class="text-sm text-slate-400">${dateStr}</div>
+                                </div>
+                                <div class="mt-1 font-semibold text-lg text-slate-700 truncate">${quote.customer} — ${quote.job}</div>
+                                <div class="text-xs text-slate-500">${quote.quantity} pcs • ${formatCurrency(quote.grandTotal)}</div>
+                            </div>
+                            
+                            <div class="flex items-center gap-x-2 opacity-80 group-hover:opacity-100">
+                                <button onclick="loadQuoteFromHistory(${idx}); hideHistoryModal();" 
+                                        class="px-5 py-2 text-xs font-semibold bg-sky-500 hover:bg-sky-600 text-white rounded-2xl transition-all">
+                                    Load
+                                </button>
+                                <button onclick="deleteQuoteFromHistory(${idx}); event.stopImmediatePropagation();" 
+                                        class="px-3 py-2 text-xs text-red-500 hover:bg-red-50 rounded-2xl">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+                content.innerHTML = html;
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function hideHistoryModal() {
+            const modal = document.getElementById('history-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+
+        function loadQuoteFromHistory(index) {
+            currentQuote = JSON.parse(JSON.stringify(quotesHistory[index]));
+            updateUI();
+            switchView('internal');
+        }
+
+        function deleteQuoteFromHistory(index) {
+            if (confirm('Delete this quote from history?')) {
+                quotesHistory.splice(index, 1);
+                saveToStorage();
+                showHistoryModal();
+            }
+        }
+
+        function clearAllHistory() {
+            if (confirm('Permanently delete ALL quote history?')) {
+                quotesHistory = [];
+                if (storageAvailable) {
+                    try { localStorage.removeItem('tdl_quotes_history'); } catch (e) {}
+                }
+                hideHistoryModal();
+                showToast('History cleared.');
+            }
+        }
+
+        function printQuote() {
+            document.body.classList.add('printing');
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => { document.body.classList.remove('printing'); }, 500);
+            }, 100);
+        }
+
+        function exportToPDF() {
+            const activePanel = currentView === 'internal' 
+                ? document.getElementById('internal-view-panel') 
+                : document.getElementById('client-view-panel');
+
+            showToast('Generating PDF form document...');
+            const targetWidth = 1200;
+
+            html2canvas(activePanel, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                windowWidth: targetWidth,
+                width: targetWidth,
+                onclone: (clonedDoc) => {
+                    clonedDoc.body.classList.add('pdf-export');
+                    const buttons = clonedDoc.querySelectorAll('button, .no-print');
+                    buttons.forEach(btn => btn.style.display = 'none');
+                    
+                    const originalInputs = activePanel.querySelectorAll('input');
+                    const clonedInputs = clonedDoc.querySelectorAll('input');
+                    originalInputs.forEach((input, index) => {
+                        if (clonedInputs[index]) {
+                            clonedInputs[index].value = input.value;
+                            if (input.type === 'number') {
+                                clonedInputs[index].style.appearance = 'none';
+                                clonedInputs[index].style.MozAppearance = 'textfield';
+                            }
+                        }
+                    });
+                }
+            }).then(canvas => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+                const imgData = canvas.toDataURL('image/png');
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const imgWidth = pageWidth;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                const filename = `TDL_Quote_${currentQuote.id || 'New'}.pdf`;
+                doc.save(filename);
+                showToast('PDF Form exported successfully!');
+            }).catch(err => {
+                console.error('PDF export failed:', err);
+                showToast('Failed to generate PDF Form. Please try the Print button instead.');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-3xl shadow-xl flex items-center gap-x-3 text-sm z-[200]`;
+            toast.innerHTML = `<i class="fa-solid fa-check-circle text-emerald-400"></i><span>${message}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.transition = 'all 0.2s ease';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.parentNode.removeChild(toast), 200);
+            }, 2400);
+        }
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', function(e) {
+                if (e.metaKey && e.key === 's') {
+                    e.preventDefault();
+                    saveCurrentToHistory();
+                }
+                if (e.key === '?' && document.activeElement.tagName === 'BODY') {
+                    e.preventDefault();
+                    const historyModal = document.getElementById('history-modal');
+                    if (!historyModal.classList.contains('hidden')) {
+                        hideHistoryModal();
+                    } else {
+                        showHistoryModal();
+                    }
+                }
+            });
+        }
+
+        function initializeApp() {
+            initializeTailwind();
+            loadFromStorage();
+            
+            document.body.setAttribute('data-view', 'internal');
+            
+            if (!currentQuote.id || Object.keys(currentQuote).length < 5) {
+                const today = new Date();
+                currentQuote = {
+                    id: generateQuoteNumber(),
+                    date: today.toISOString(),
+                    customer: '', job: '', quantity: 1, materials: [],
+                    powerWatts: 250, electricityRate: 12, calculatedElectricityCost: 0,
+                    printerWear: 0, labor: 0, packaging: 0, designFee: 0, otherMisc: 0,
+                    workingHours: 0, calculatedLaborCost: 0,
+                    failurePct: 0, platformPct: 0, profitPct: 0
+                };
+            }
+            
+            if (!currentQuote.materials) currentQuote.materials = [];
+            
+            updateUI();
+            document.getElementById('btn-internal').classList.add('nav-active');
+            
+            const inputs = ['customer', 'job', 'quantity', 'power-watts', 'electricity-rate', 'printer-wear', 'labor', 'packaging', 'design-fee', 'other-misc', 'working-hours', 'failure-pct', 'platform-pct', 'profit-pct'];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('change', updateQuoteData);
+            });
+            
+            setInterval(() => {
+                if (currentQuote.grandTotal > 50) saveToStorage();
+            }, 45000);
+            
+            setupKeyboardShortcuts();
+        }
+
+        window.onload = initializeApp;
+        window.TDL = { newQuote, loadSampleData, saveCurrentToHistory, calculateTotals };
+    </script>
+</body>
+</html>
